@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>幻花女儿模拟器</title>
+<style>
+  :root{
+    --bg:#0e0c0b;
+    --bg2:#16120f;
+    --panel:rgba(255,255,255,0.035);
+    --text:#ded4c8;
+    --dim:#8f857a;
+    --warm:#c9855a;
+    --warm-soft:#e0a97e;
+    --cool:#7d9bb0;
+    --line:rgba(255,255,255,0.08);
+    --up:#7fb08a;
+    --down:#c2705f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1100px 600px at 15% -10%, rgba(201,133,90,0.10), transparent 60%),
+      radial-gradient(900px 500px at 90% 110%, rgba(125,155,176,0.08), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:"Songti SC","Noto Serif SC","Source Han Serif SC",serif;
+    line-height:1.95;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:820px;margin:0 auto;padding:0 22px 90px;}
+
+  /* ---------- 顶栏 ---------- */
+  #topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 0 12px;
+    position:sticky;top:0;z-index:20;
+    background:linear-gradient(to bottom, var(--bg) 62%, transparent);
+  }
+  .brand{
+    font-size:13px;letter-spacing:.32em;color:var(--dim);
+    text-transform:none;
+  }
+  .ghost-btn{
+    background:none;border:1px solid var(--line);color:var(--dim);
+    font-family:inherit;font-size:12px;letter-spacing:.1em;
+    padding:6px 14px;border-radius:999px;cursor:pointer;
+    transition:.25s;
+  }
+  .ghost-btn:hover{color:var(--warm-soft);border-color:rgba(201,133,90,.45);}
+
+  /* ---------- 属性 ---------- */
+  #stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:10px 20px;
+    padding:16px 18px;
+    margin-bottom:26px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    animation:fade .4s ease;
+  }
+  .stat{font-size:11.5px;letter-spacing:.05em;}
+  .stat-top{display:flex;justify-content:space-between;color:var(--dim);margin-bottom:5px;}
+  .stat-top .v{color:var(--text);font-variant-numeric:tabular-nums;}
+  .bar{height:3px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+  .bar i{display:block;height:100%;border-radius:2px;transition:width .6s cubic-bezier(.3,.9,.3,1);}
+  .stat.in .bar i{background:linear-gradient(90deg,#8a5c3c,var(--warm-soft));}
+  .stat.out .bar i{background:linear-gradient(90deg,#4a6478,var(--cool));}
+
+  /* ---------- 通用 ---------- */
+  .hidden{display:none!important;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .fade{animation:fade .75s ease both;}
+
+  .btn{
+    font-family:inherit;font-size:14.5px;letter-spacing:.06em;
+    background:none;border:1px solid var(--line);color:var(--text);
+    padding:12px 22px;border-radius:8px;cursor:pointer;
+    transition:.28s;text-align:left;
+  }
+  .btn:hover{border-color:rgba(201,133,90,.5);background:rgba(201,133,90,.06);}
+  .btn.primary{border-color:rgba(201,133,90,.5);color:var(--warm-soft);}
+  .btn.primary:hover{background:rgba(201,133,90,.12);}
+
+  /* ---------- 封面 ---------- */
+  .cover{padding:8vh 0 40px;}
+  .cover-line{
+    font-size:16.5px;color:var(--text);margin-bottom:20px;
+    opacity:0;animation:fade 1.4s ease forwards;
+  }
+  .cover-line .sub{display:block;color:var(--dim);font-size:13px;letter-spacing:.16em;margin-top:6px;}
+  .cover-title{
+    font-size:30px;letter-spacing:.22em;color:var(--warm-soft);
+    margin:56px 0 10px;font-weight:400;
+    opacity:0;animation:fade 1.6s ease 2.4s forwards;
+  }
+  .cover-sub{
+    font-size:12px;letter-spacing:.26em;color:var(--dim);margin-bottom:52px;
+    opacity:0;animation:fade 1.6s ease 2.9s forwards;
+  }
+  .cover-btn{opacity:0;animation:fade 1.4s ease 3.5s forwards;}
+
+  /* ---------- 扫描 ---------- */
+  .scan-box{
+    font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12.5px;line-height:2.1;color:var(--dim);
+    background:rgba(0,0,0,.32);border:1px solid var(--line);
+    border-radius:10px;padding:20px 22px;margin:6vh 0 26px;
+    white-space:pre-wrap;
+  }
+  .scan-box .ok{color:var(--warm-soft);}
+  .cursor{display:inline-block;width:7px;height:14px;background:var(--warm-soft);
+    vertical-align:-2px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ---------- 角色创建 ---------- */
+  .q-wrap{padding:5vh 0;}
+  .q-index{font-size:11.5px;letter-spacing:.24em;color:var(--dim);margin-bottom:14px;}
+  .q-title{font-size:20px;margin-bottom:8px;color:var(--text);font-weight:400;letter-spacing:.05em;}
+  .q-desc{font-size:13px;color:var(--dim);margin-bottom:30px;}
+  .opts{display:flex;flex-direction:column;gap:11px;}
+  .opt{
+    font-family:inherit;font-size:15px;text-align:left;
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    padding:15px 20px;border-radius:9px;cursor:pointer;transition:.26s;
+  }
+  .opt:hover{border-color:rgba(201,133,90,.5);background:rgba(201,133,90,.07);transform:translateX(3px);}
+  .opt small{display:block;font-size:12px;color:var(--dim);margin-top:4px;letter-spacing:.04em;}
+
+  .text-input{
+    width:100%;font-family:inherit;font-size:15.5px;color:var(--text);
+    background:rgba(0,0,0,.3);border:1px solid var(--line);
+    border-radius:9px;padding:15px 18px;outline:none;transition:.25s;
+    margin-bottom:14px;
+  }
+  .text-input:focus{border-color:rgba(201,133,90,.55);background:rgba(0,0,0,.45);}
+  .text-input::placeholder{color:#5f574f;}
+
+  /* ---------- 剧情 ---------- */
+  .chapter{padding-top:4px;animation:fade .9s ease both;}
+  .ch-meta{font-size:11px;letter-spacing:.24em;color:var(--warm);margin-bottom:14px;}
+  .ch-title{font-size:23px;font-weight:400;letter-spacing:.08em;margin-bottom:8px;color:#efe5d8;}
+  .ch-scene{font-size:12px;color:var(--dim);letter-spacing:.1em;margin-bottom:34px;
+    padding-bottom:22px;border-bottom:1px solid var(--line);}
+
+  .prose p{margin-bottom:22px;font-size:16.5px;color:#d6ccc0;letter-spacing:.015em;}
+  .prose p:last-child{margin-bottom:0;}
+
+  .choices{margin-top:44px;animation:fade .8s ease both;}
+  .choices-title{font-size:12px;letter-spacing:.24em;color:var(--dim);margin-bottom:16px;}
+  .choice{
+    display:block;width:100%;font-family:inherit;font-size:15px;text-align:left;
+    background:var(--panel);border:1px solid var(--line);color:var(--text);
+    padding:15px 20px;border-radius:9px;cursor:pointer;transition:.26s;
+    margin-bottom:11px;line-height:1.7;
+  }
+  .choice:hover{border-color:rgba(201,133,90,.5);background:rgba(201,133,90,.07);transform:translateX(3px);}
+  .choice .tag{color:var(--dim);font-size:12px;margin-left:6px;}
+
+  .result{margin-top:34px;animation:fade .8s ease both;}
+  .result-prose p{margin-bottom:20px;font-size:16px;color:#cfc5b8;}
+  .deltas{display:flex;flex-wrap:wrap;gap:9px;margin:26px 0 32px;}
+  .deltas span{font-size:12.5px;letter-spacing:.06em;padding:5px 13px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02);}
+  .deltas .up{color:var(--up);border-color:rgba(127,176,138,.3);}
+  .deltas .down{color:var(--down);border-color:rgba(194,112,95,.3);}
+
+  /* ---------- 阶段总结 ---------- */
+  .summary-box{
+    border-left:2px solid rgba(201,133,90,.5);
+    padding:6px 0 6px 24px;margin:8px 0 30px;
+  }
+  .summary-item{margin-bottom:22px;}
+  .summary-item h4{font-size:12px;letter-spacing:.2em;color:var(--warm);font-weight:400;margin-bottom:8px;}
+  .summary-item p{font-size:15.5px;color:#cfc5b8;}
+
+  /* ---------- 结局 ---------- */
+  .ending{text-align:center;padding:8vh 0 40px;animation:fade 1.4s ease both;}
+  .ending-tag{font-size:11px;letter-spacing:.4em;color:var(--dim);margin-bottom:18px;}
+  .ending-title{font-size:28px;letter-spacing:.18em;color:var(--warm-soft);margin-bottom:44px;font-weight:400;}
+  .ending-prose{text-align:left;max-width:640px;margin:0 auto 50px;}
+  .ending-prose p{margin-bottom:22px;font-size:16.5px;color:#d6ccc0;}
+
+  .free-wrap{margin-top:6px;}
+  .center{text-align:center;}
+  .mt{margin-top:30px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topbar" class="hidden">
+    <div class="brand">幻花女儿模拟器</div>
+    <button id="statToggle" class="ghost-btn">属性 ▾</button>
+  </div>
+  <div id="stats" class="hidden"></div>
+  <main id="stage"></main>
+</div>
+
+<script>
+/* ============================================================
+   基础数据
+   ============================================================ */
+const ATTRS = [
+  {k:'family',   n:'家庭凝聚力',   g:'in'},
+  {k:'love',     n:'父母感情值',   g:'in'},
+  {k:'presence', n:'女儿存在感',   g:'in'},
+  {k:'risk',     n:'秘密危险度',   g:'out'},
+  {k:'alert',    n:'平台运营警觉度', g:'out'},
+  {k:'fan',      n:'粉丝舆论压力', g:'out'},
+  {k:'career',   n:'事业压力',     g:'out'},
+];
+
+const S = {
+  name:'', stage:'', personality:'', pacing:'',
+  idx:0, attrs:{}, flags:{}, plugin:false,
+};
+
+const stageEl = () => document.getElementById('stage');
+const rand = (a,b)=> Math.floor(Math.random()*(b-a+1))+a;
+const clamp = v => Math.max(0, Math.min(100, v));
+const nameOf = k => (ATTRS.find(a=>a.k===k)||{}).n || k;
+
+function fmt(t){
+  return t.replace(/\{name\}/g, S.name || '小满')
+          .split('\n\n')
+          .map(p=>`<p>${p.replace(/\n/g,'<br>')}</p>`)
+          .join('');
+}
+function scrollTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+
+/* ============================================================
+   属性面板
+   ============================================================ */
+function renderStats(){
+  const box = document.getElementById('stats');
+  box.innerHTML = ATTRS.map(a=>{
+    const v = S.attrs[a.k] ?? 0;
+    return `<div class="stat ${a.g}">
+      <div class="stat-top"><span>${a.n}</span><span class="v">${v}</span></div>
+      <div class="bar"><i style="width:${v}%"></i></div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('statToggle').onclick = ()=>{
+  document.getElementById('stats').classList.toggle('hidden');
+};
+
+/* ============================================================
+   封面
+   ============================================================ */
+const COVER_LINES = [
+  ['上海福利院走廊，傍晚六点四十分。', '橘色窗光斜切过地砖'],
+  ['出租公寓玄关，摆着一双小小的童鞋。', '鞋头朝着门'],
+  ['隔音墙两侧，两个人背靠背坐着。', '谁也没有先开口'],
+  ['商务车后座，蜷着一只小小的手。', '窗外是外滩的晚风'],
+];
+
+function boot(){
+  document.getElementById('topbar').classList.add('hidden');
+  document.getElementById('stats').classList.add('hidden');
+  const st = stageEl();
+  st.innerHTML = `<div class="cover">
+    ${COVER_LINES.map((l,i)=>`
+      <div class="cover-line" style="animation-delay:${i*0.55+0.3}s">${l[0]}<span class="sub">${l[1]}</span></div>
+    `).join('')}
+    <h1 class="cover-title">幻花女儿模拟器</h1>
+    <div class="cover-sub">家产女儿 · 定向文字模拟</div>
+    <div class="cover-btn"><button class="btn primary" id="startBtn">进入 →</button></div>
+  </div>`;
+  document.getElementById('startBtn').onclick = pluginCheck;
+}
+
+/* ============================================================
+   插件检查
+   ============================================================ */
+function pluginCheck(){
+  const st = stageEl();
+  st.innerHTML = `<div class="scan-box" id="scanBox"></div>`;
+  const box = document.getElementById('scanBox');
+  const lines = [
+    '> 扫描插件接口区域 ...',
+    '> /plugin/mohuan_hs ······ <span class="ok">存在非空白字符</span>',
+    '> /plugin/emotion_engine ·· <span class="ok">存在非空白字符</span>',
+    '> 检测完成。',
+  ];
+  let i = 0;
+  const timer = setInterval(()=>{
+    if(i < lines.length){
+      box.innerHTML += lines[i] + '\n';
+      i++;
+    }else{
+      clearInterval(timer);
+      box.innerHTML += '<span class="cursor"></span>';
+      setTimeout(askPlugin, 700);
+    }
+  }, 420);
+}
+
+function askPlugin(){
+  const st = stageEl();
+  st.innerHTML += `
+    <div class="q-wrap fade">
+      <div class="q-index">SYSTEM</div>
+      <div class="q-title">是否使用插件？</div>
+      <div class="q-desc">插件会为叙事提供额外的情绪与氛围提示。</div>
+      <div class="opts">
+        <button class="opt" data-p="1">是<small>加载插件，叙事将带有更细的情绪层</small></button>
+        <button class="opt" data-p="0">否<small>以纯净模式开始</small></button>
+      </div>
+    </div>`;
+  st.querySelectorAll('.opt').forEach(b=>{
+    b.onclick = ()=>{
+      S.plugin = b.dataset.p === '1';
+      startCharCreate();
+    };
+  });
+}
+
+/* ============================================================
+   角色创建
+   ============================================================ */
+const QUESTIONS = [
+  {
+    key:'stage',
+    title:'起点年龄段',
+    desc:'你从这个年纪开始，被看见。',
+    options:[
+      {v:'婴儿期', t:'婴儿期（0-2岁）', s:'你没有记忆，但他们记得所有细节'},
+      {v:'懵懂期', t:'懵懂期（5-7岁）', s:'你开始拥有清晰记忆'},
+      {v:'青春期', t:'青春期（13-15岁）', s:'所有真相你都看懂，却不能对外言说'},
+      {v:'成年初期', t:'成年初期（18-19岁）', s:'你拥有自主选择立场的完整能力'},
+    ]
+  },
+  {
+    key:'name',
+    title:'女儿名字',
+    desc:'某幻翻了一整夜字典取的名字。',
+    type:'text',
+    placeholder:'输入中文名或昵称……',
+    presets:['小满','念念','年年','小酒'],
+  },
+  {
+    key:'personality',
+    title:'女儿性格倾向',
+    desc:'你在家里，是一个什么样的小孩。',
+    options:[
+      {v:'安静观察型', t:'安静观察型', s:'你习惯先看，再说话'},
+      {v:'主动守护型', t:'主动守护型', s:'你总想替他们挡住一点什么'},
+      {v:'叛逆探索型', t:'叛逆探索型', s:'你不太愿意活在被安排好的缝隙里'},
+      {v:'__custom', t:'自定义', s:'自己写一个'},
+    ]
+  },
+  {
+    key:'pacing',
+    title:'剧情节奏偏好',
+    desc:'你想要怎样被讲述。',
+    options:[
+      {v:'慢热细腻', t:'慢热细腻', s:'把每一顿饭、每一盏灯都过一遍'},
+      {v:'张力优先', t:'张力优先', s:'危机来得更早，也更锋利'},
+      {v:'均衡推进', t:'均衡推进', s:'温柔与酸涩交替'},
+      {v:'现实舆论向', t:'现实舆论向', s:'镜头、弹幕、热搜，一直在场'},
+      {v:'__custom', t:'自定义', s:'自己写一个'},
+    ]
+  }
+];
+
+let qIndex = 0;
+
+function startCharCreate(){
+  qIndex = 0;
+  renderQuestion();
+}
+
+function renderQuestion(){
+  const q = QUESTIONS[qIndex];
+  const st = stageEl();
+  let body = '';
+
+  if(q.type === 'text'){
+    body = `
+      <input class="text-input" id="qInput" placeholder="${q.placeholder}" autocomplete="off">
+      <div class="opts">
+        ${q.presets.map(p=>`<button class="opt" data-name="${p}">${p}<small>使用这个</small></button>`).join('')}
+      </div>
+      <div class="mt"><button class="btn primary" id="qNext">确认 →</button></div>`;
+  }else{
+    body = `<div class="opts">
+      ${q.options.map((o,i)=>`<button class="opt" data-i="${i}">${o.t}<small>${o.s}</small></button>`).join('')}
+    </div>`;
+  }
+
+  st.innerHTML = `<div class="q-wrap fade">
+    <div class="q-index">0${qIndex+1} / 0${QUESTIONS.length}</div>
+    <div class="q-title">${q.title}</div>
+    <div class="q-desc">${q.desc}</div>
+    ${body}
+  </div>`;
+
+  if(q.type === 'text'){
+    const input = document.getElementById('qInput');
+    st.querySelectorAll('[data-name]').forEach(b=>{
+      b.onclick = ()=>{ input.value = b.dataset.name; };
+    });
+    document.getElementById('qNext').onclick = ()=>{
+      const v = (input.value || '').trim();
+      if(!v){ input.focus(); input.style.borderColor='rgba(194,112,95,.7)'; return; }
+      S[q.key] = v;
+      nextQuestion();
+    };
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('qNext').click(); });
+  }else{
+    st.querySelectorAll('[data-i]').forEach(b=>{
+      b.onclick = ()=>{
+        const o = q.options[+b.dataset.i];
+        if(o.v === '__custom'){
+          customAnswer(q);
+        }else{
+          S[q.key] = o.v;
+          nextQuestion();
+        }
+      };
+    });
+  }
+  scrollTop();
+}
+
+function customAnswer(q){
+  const st = stageEl();
+  st.innerHTML = `<div class="q-wrap fade">
+    <div class="q-index">0${qIndex+1} / 0${QUESTIONS.length}</div>
+    <div class="q-title">${q.title}</div>
+    <div class="q-desc">写下你自己的答案。</div>
+    <input class="text-input" id="qInput" placeholder="例如：安静但爱记仇的小孩" autocomplete="off">
+    <button class="btn primary" id="qNext">确认 →</button>
+  </div>`;
+  const input = document.getElementById('qInput');
+  document.getElementById('qNext').onclick = ()=>{
+    const v = (input.value||'').trim();
+    if(!v){ input.focus(); return; }
+    S[q.key] = v;
+    nextQuestion();
+  };
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('qNext').click(); });
+  input.focus();
+}
+
+function nextQuestion(){
+  qIndex++;
+  if(qIndex < QUESTIONS.length) renderQuestion();
+  else startGame();
+}
+
+/* ============================================================
+   开局
+   ============================================================ */
+function startGame(){
+  // 初始属性
+  S.attrs = {
+    family: rand(10,28),
+    love: 50,
+    presence: S.stage === '懵懂期' ? 10 : rand(10,50),
+    risk: rand(10,28),
+    alert: 50,
+    fan: rand(10,28),
+    career: 60,
+  };
+  S.flags = {};
+  S.idx = ({ '婴儿期':0, '懵懂期':4, '青春期':8, '成年初期':13 })[S.stage] ?? 0;
+
+  document.getElementById('topbar').classList.remove('hidden');
+  document.getElementById('stats').classList.remove('hidden');
+  renderStats();
+  renderChapter();
+}
+
+/* ============================================================
+   章节数据
+   ============================================================ */
+const CHAPTERS = [
+
+/* ---------- 婴儿期 ---------- */
+{
+  type:'chapter', stage:'婴儿期', act:'第一幕 · 被选择',
+  title:'名字的重量', scene:'福利院走廊',
+  text:`福利院走廊尽头的窗开着一半，傍晚的橘色光斜切进来，在地砖上划出一道明暗交界。
+
+花少北抱着你坐在长椅上，手臂绷得很紧，掌心却放得极轻，像捧着一件会呼吸的、怕碎的东西。
+
+"你别绷这么紧，后背全是汗。"某幻站在一旁低声笑他。
+
+"我没有紧张。"花少北嘴硬反驳，手臂却又往回收了收，低头看你。
+
+你四个月大，看不了太远。视野里只有两个模糊的轮廓，一个离得很近，一个稍远一点，都停在光里。
+
+"你知道自己叫什么吗？"他的拇指轻轻蹭过你的脸颊。
+
+{name}——是某幻翻了一整夜字典取的。
+
+"我是谁呀？"花少北的额头轻轻抵住你的小额头，声音软下来，"我是花少北，以后你想叫我什么都可以。爸爸、小北、少北，都行。"
+
+某幻在旁边无奈叹气："你直接让孩子喊你名字？"
+
+"她才四个月，话都说不清！"花少北抬眼怼回去，"我不想逼她，等她自己愿意开口再叫就好。"
+
+后来他又低下头，慢慢讲起取名的那个凌晨——四点十七分，某幻发消息问他这个名字好不好，一个字一个字地解释寓意。他随口答应了，对方开心到一整晚没睡，第二天煮咖啡递杯子的时候，嘴角一直扬着。
+
+你听不懂。
+
+但你抓住了他的手指。`,
+  options:[
+    {
+      label:'攥住他的手指，怎么都不肯松开',
+      effects:{family:6, love:4, presence:6},
+      result:`花少北整个人僵了一瞬，随即低头，眼睛亮得有点不像话。
+
+"你看。"他小声说，像是怕吓着你，"她抓我了。"
+
+某幻走过来，蹲在长椅边，伸手碰了碰你握紧的那只小拳头。你没有松手，反而把他也一起攥了进去。
+
+"行吧。"某幻的声音很轻，带着一点没压住的笑，"那就这么定了。"`
+    },
+    {
+      label:'忽然放声大哭，把两个人都吓一跳',
+      effects:{presence:4, family:3, career:3},
+      result:`你的哭声在走廊里荡开，惊天动地。
+
+花少北手忙脚乱地站起来又坐下，某幻已经先一步去翻包里的奶瓶，动作熟练得不像第一次。
+
+"我来我来。"花少北抢过奶瓶，喂得小心翼翼，姿势还有点僵。
+
+你含着奶嘴，慢慢安静下来。
+
+"吓死我了。"他长长呼出一口气，回头瞪某幻，"你笑什么？"
+
+"没笑。"某幻嘴角确实没在笑。`
+    },
+    {
+      label:'视线越过他的肩膀，一直落在某幻身上',
+      effects:{love:3, family:3, presence:5},
+      result:`某幻注意到了。他原本站在半步之外，慢慢走近，在你面前蹲下来，和你视线齐平。
+
+"她看我。"他说，语气里有一种很轻的、几乎听不出来的不确定。
+
+"她当然看你。"花少北把孩子往他那边递了递，"抱一下？"
+
+某幻接过去的动作很稳，只有指尖有一点点抖。
+
+那天下午，他抱着你在窗边站了很久，一直没有放下。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'婴儿期', act:'第一幕 · 被选择',
+  title:'五人的秘密', scene:'合租公寓·客厅',
+  text:`领养手续办完的第九天，客厅角落还堆着没拆的奶粉纸箱。
+
+老番茄是第一个来的。他在沙发上坐了很久，视线在你和某幻之间来回扫了三遍，最后只说了句："你们俩，最近气色挺好。"
+
+没有人接话。花少北把剥了一半的橘子塞进他手里。
+
+三天后，Lex 在楼下便利店门口堵住某幻，递过去一根烟，自己却没点："我不问。但你得知道，你们现在不是两个人了。"
+
+中国BOY 是最后一个。他拎着两袋烧烤上门，推开门，愣在原地，手里的袋子晃了一下。
+
+"……卧槽。"
+
+他蹲下来，隔着一米的距离看你，看了很久，然后回头冲屋里两个人笑："你俩行啊。"
+
+那天的烧烤凉了一半。
+
+客厅的灯开得很亮，五个人挤在沙发上，谁也没提"秘密"两个字。
+
+老番茄把手机倒扣在茶几上："以后出门，能少一张合照就少一张。"
+
+Lex 说："团建我挡镜头。"
+
+BOY 说："我住得近，随时能来。"
+
+某幻低着头，很久之后说了句："谢谢。"
+
+花少北没说话，只是把一块剔好的肉放进你碗里，指尖有点抖。`,
+  options:[
+    {
+      label:'伸手去抓老番茄倒扣在茶几上的手机',
+      effects:{family:5, presence:4, risk:3},
+      result:`满桌人都看向你。
+
+老番茄愣了一下，把手机拿起来，翻过来，屏幕朝上，放回你面前："没事，看吧。"
+
+他转头对某幻和花少北说，语气很平："你们得习惯。她会长大，会看手机，会自己去搜。"
+
+客厅安静了两秒。
+
+"我知道。"某幻说。
+
+"知道就好。"老番茄笑了笑，把手机屏幕按灭，"那就从现在开始想清楚，哪些东西，永远不该留在网上。"`
+    },
+    {
+      label:'对着中国BOY 笑了一下',
+      effects:{presence:7, family:5, love:2},
+      result:`中国BOY 整个人都软了。
+
+"哎哟——"他伸手想抱又不敢抱，回头看花少北，"我能抱一下吗？我洗手了。"
+
+"你抱你抱。"花少北笑着摆手。
+
+他把你抱起来，动作笨拙又小心，像捧着什么特别烫的东西，嘴里一直念叨："你好小啊。"
+
+那天他走的时候，在门口回头说了句："我明天还来。"
+
+某幻说："你明天不是有拍摄？"
+
+"推了。"BOY 摆摆手，笑得特别憨。`
+    },
+    {
+      label:'忽然安静下来，一个一个看着他们的脸',
+      effects:{presence:6, family:4, love:3},
+      result:`客厅里慢慢没人说话了。
+
+五个人，五张脸，在灯下都看着你。
+
+Lex 先笑出声："这小孩，眼神有点东西啊。"
+
+"别吓她。"欣小萌凑过来，蹲在沙发边，用手指轻轻碰了碰你的手心，"诶，她好乖。"
+
+六道靠在门框上，看了很久，忽然说了一句："你们这日子，挺不容易的。"
+
+没有人反驳。
+
+花少北低头，把脸埋进某幻的肩膀，很快又抬起来，笑着招呼大家吃烧烤。
+
+那晚上，客厅的灯一直亮到很晚。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'婴儿期', act:'第二幕 · 成长的重量',
+  title:'你不知道的那些夜晚', scene:'合租公寓·客厅',
+  text:`那天晚上你睡得比平时早。
+
+客厅只开了一盏落地灯，花少北盘腿坐在地毯上，背靠着沙发。某幻从厨房出来，把一杯温水放在他手边，然后在他旁边坐下，肩膀挨着肩膀。
+
+"今天老番茄那句话，我一直在想。"花少北说，"他说我们现在不是两个人了。"
+
+"他说得对。"
+
+"我知道。"花少北把头靠过去，"我就是……有点怕。怕我们护不住她。"
+
+某幻没说话，伸手把他往怀里揽了一点，手掌覆在他后脑，一下一下顺着。
+
+"那就一起护。"
+
+花少北闷在他肩窝里，声音很低："你别一个人扛。"
+
+"嗯。"
+
+落地灯的光落在两个人交叠的影子上。
+
+后来某幻低下头，很轻地在他额角吻了一下，像怕惊到什么。
+
+"我有时候会想。"花少北闭着眼睛说，"如果哪天真的被拍到了，你会不会后悔。"
+
+某幻沉默了很久。
+
+"我唯一会后悔的事，"他说，"是让你一个人站在那儿。"`,
+  options:[
+    {
+      label:'第二天早上，你发现沙发上多了一条叠好的毯子',
+      effects:{family:6, love:5, presence:4},
+      result:`毯子叠得很整齐，一看就是某幻的手笔。
+
+花少北打着哈欠从房间出来，头发翘着一边，看见你在看那条毯子，愣了一下，然后笑起来："昨晚空调开太低了。"
+
+某幻在厨房接了一句："是你自己说冷的。"
+
+"我什么时候说了。"
+
+"你说了。"
+
+"……我没有。"
+
+两个人的声音在早上八点的厨房里撞来撞去，谁也没真生气。
+
+你趴在沙发边，觉得这个早晨很暖。`
+    },
+    {
+      label:'伸手去够桌上那杯没喝完的温水',
+      effects:{presence:5, family:4, love:3},
+      result:`杯子被端走了。
+
+"哎哎哎不行。"花少北一把把你捞起来，"凉的。"
+
+某幻从厨房探头："昨晚的？"
+
+"嗯。"
+
+"倒了重新烧。"
+
+花少北抱着你去厨房，一边走一边小声说："你爸就是嘴硬，昨晚这杯水还是他倒的。"
+
+某幻背对着你们，耳朵有点红："……水开了。"`
+    },
+    {
+      label:'你盯着某幻的侧脸，看了很久很久',
+      effects:{presence:7, love:4, family:3},
+      result:`某幻被你盯得有点不自在，摸了摸自己的脸："我脸上有东西？"
+
+你当然不会回答。
+
+花少北在旁边笑得直不起腰："她嫌弃你。你说你是不是没洗脸。"
+
+"我洗了。"
+
+"那就是长得丑。"
+
+"……"
+
+某幻叹了口气，弯腰把你抱起来，凑近了一点，认真地问："我丑吗？"
+
+你伸出小手，拍在他脸上。
+
+客厅里爆出一阵笑声，花少北笑得扶着沙发。某幻抱着你站在原地，最后也笑了，笑得眼睛弯起来，那颗泪痣跟着动了动。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+
+/* ---------- 阶段总结：婴儿期 ---------- */
+{
+  type:'summary', stage:'婴儿期',
+  title:'阶段总结 · 婴儿期',
+  items:[
+    ['本阶段三件核心关键事件',
+     '福利院走廊里，你第一次被叫出名字；五个人在那间不大的客厅里，共同承认了这个不能对外说的秘密；深夜的落地灯下，某幻说出口的那句"那就一起护"。'],
+    ['某幻 & 花少北二人感情变化',
+     '从"我们两个"到"我们三个"的过渡期。花少北开始频繁地表达不安，某幻习惯性地兜底，但两个人依然会在深夜背靠背坐着，谁也不肯先睡。'],
+    ['女儿内心成长与心态变化',
+     '你还什么都记不住。你只是知道，有两双手总是很稳地接着你。'],
+    ['当前尚未解决的危机、潜藏隐患',
+     '领养手续留下的痕迹，是一个随时可能被翻出来的线头。这个家还没有真正学会，如何在镜头之外生活。']
+  ]
+},
+
+/* ---------- 懵懂期 ---------- */
+{
+  type:'chapter', stage:'懵懂期', act:'第二幕 · 成长的重量',
+  title:'家长日', scene:'幼儿园·教室',
+  text:`幼儿园中班的家长开放日，教室里贴满了小朋友画的全家福。
+
+你的画上画了三个人：两个高的，一个矮的，手拉手站在一栋方方正正的房子前。
+
+老师蹲下来，笑着问你："这是爸爸和妈妈吗？"
+
+"是爸爸和爸爸。"你说。
+
+教室里安静了半秒。有个小朋友凑过来看，说："你怎么有两个爸爸？"
+
+花少北正好走到门口，脚步停了一下。
+
+某幻在他身后半步，手在他后腰轻轻按了一下。
+
+老师很快笑着岔开："画得真好，颜色涂得很满。"
+
+回家的路上，花少北牵着你，走得很慢，忽然问："今天那个小朋友问你的时候，你生气了吗？"
+
+你摇头。
+
+他松了口气，又好像更难受了一点。
+
+某幻走在另一边，全程没怎么说话，只是在过马路的时候，把手伸过来，替你挡住了车流的方向。`,
+  options:[
+    {
+      label:'抬起头说："我有两个爸爸，我觉得很好。"',
+      effects:{family:6, presence:8, love:4, risk:3},
+      result:`花少北的脚步停住了。
+
+他蹲下来，跟你视线齐平，眼睛有点红，但还是笑："……你说什么？"
+
+"我有两个爸爸。"你又重复了一遍，很认真，"我觉得很好。"
+
+某幻站在旁边，一直没有说话。过了很久，他伸手揉了揉你的头发，声音有点哑："走吧，回家吃面。"
+
+那天晚上，餐桌上多了一道菜。
+
+花少北一边吃一边偷偷擦眼睛，某幻假装没看见，只是把那盘菜往他那边推了推。`
+    },
+    {
+      label:'反问花少北："我可以说吗？"',
+      effects:{family:3, presence:5, love:2, risk:5},
+      result:`花少北蹲下来，认真地看着你。
+
+"可以。"他说，"你想怎么说都可以。"
+
+"那别人问我不说，可以吗？"
+
+他愣了很久。
+
+"……也可以。"他把你抱起来，声音很轻，"对不起啊。"
+
+某幻走过来，把手放在花少北的后背上，没有说话。
+
+那天晚上，两个人房间的灯，关得比平时晚。`
+    },
+    {
+      label:'什么都不说，只是把两只手都握紧了',
+      effects:{family:5, love:5, presence:6},
+      result:`你左手牵着花少北，右手牵着某幻，一路都没有松开。
+
+走到小区门口的时候，花少北忽然笑了一声："你看她。"
+
+"看什么。"
+
+"她把我们俩拴着呢。"
+
+某幻低头看了一眼被你攥得紧紧的手，弯了弯眼睛："嗯。"
+
+三个人就那样并排走进楼道，影子在墙上一层一层叠在一起。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'懵懂期', act:'第二幕 · 成长的重量',
+  title:'客厅里压低的声音', scene:'合租公寓·深夜',
+  text:`你是被声音吵醒的。
+
+客厅的灯从门缝底下漏进来一条。两个人的声音压得很低，低到只能听清一些碎片。
+
+"……这个月第三次了。"是花少北，"商单、直播、线下，你算算你在家待了几个晚上。"
+
+"我知道。"
+
+"你知道，你什么都知道。"花少北的声音有点抖，"那你能不能别每次都这样，什么事都自己扛着，等你扛不住了呢？"
+
+某幻沉默了很久。
+
+"我怕我做不好。"他说，"我怕哪一天，她长大了，回头看，觉得是我们把她拖进来的。"
+
+门缝里的光晃了一下。
+
+"某幻。"花少北的声音忽然软下来，"你看着我。"
+
+然后是布料摩擦的声音，很轻。
+
+"我们是一起选的她。"花少北说，"不是你一个人。"
+
+你听见某幻吸了一口气，像是什么东西被咽了回去。
+
+第二天早上，餐桌上摆着两碗面，一碗没放香菜，一碗没放葱花。`,
+  options:[
+    {
+      label:'你走过去，抱住他们的腿',
+      effects:{family:10, love:5, presence:8},
+      result:`两个人都僵住了。
+
+花少北先反应过来，蹲下来把你搂进怀里："吵醒你了？"
+
+你摇头，一只手还抓着某幻的裤腿不放。
+
+某幻也蹲了下来。三个人就那么挤在餐桌旁边，谁也没说话。
+
+过了很久，某幻轻轻说："对不起。"
+
+花少北靠在他肩膀上，闷闷地"嗯"了一声。
+
+那天的面有点坨了，但是很香。`
+    },
+    {
+      label:'你悄悄退回房间，假装什么都没听见',
+      effects:{presence:-3, love:2, family:1},
+      result:`你踮着脚回到床上，把被子拉到下巴。
+
+客厅的声音小了下去，后来连灯也灭了。
+
+第二天早上，两个人什么都没提，照常给你盛面、递筷子。
+
+你也没有问。
+
+只是从那以后，你开始留意他们说话的音量。`
+    },
+    {
+      label:'你把花少北那碗面，推到他面前',
+      effects:{family:6, love:3, presence:6},
+      result:`花少北看着被推过来的那碗面，愣了两秒。
+
+"……你这是给爸爸的吗？"
+
+你点头。
+
+他笑了一下，笑得有点勉强，眼眶却红了。他低头吃了一大口，含糊地说："好吃。"
+
+某幻在旁边看着，安静地把自己那碗里的葱花挑掉，然后把自己碗里的鸡蛋夹到了花少北碗里。
+
+花少北没抬头，只是把面往他那边挪了挪。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'懵懂期', act:'第二幕 · 成长的重量',
+  title:'超市门口的镜头', scene:'超市门口',
+  text:`周末傍晚，三个人去楼下超市买菜。
+
+花少北推着购物车，某幻在旁边挑西红柿，你坐在车里，两条腿晃来晃去。
+
+结账的时候，某幻接了个电话，走到一边去说。花少北低头把东西往袋子里装，顺手把一盒你爱吃的草莓也塞了进去。
+
+门口有两个女生拿着手机，先是对着货架拍，然后镜头慢慢转了过来。
+
+花少北先发现的。他动作很自然地侧过身，把你从购物车里抱出来，让你的脸埋在他肩上，背对着那个方向。
+
+"怎么了？"某幻挂了电话走过来。
+
+"没事。"花少北笑了笑，声音很稳，"风大。"
+
+那天回家的路上，他一直抱着你，没有放下。`,
+  options:[
+    {
+      label:'趴在他肩上，悄悄回头看了一眼',
+      effects:{risk:8, presence:4, fan:5},
+      result:`那两个女生的手机镜头，正对着你们的背影。
+
+花少北感觉到了你的动作，手臂收紧了一点，脚步加快。
+
+"别回头。"他声音很轻，像在哄你，也像在哄自己。
+
+到家之后，他把你放下，转身就去拿手机，翻了很久。
+
+某幻走过来，把手按在他手上："别看了。"
+
+"我就看一眼。"
+
+"别看了。"
+
+花少北把手机放下了。
+
+那天晚上，客厅的窗帘拉得比平时严。`
+    },
+    {
+      label:'搂住他的脖子，把脸埋得更深',
+      effects:{risk:-5, family:5, love:3, presence:6},
+      result:`花少北感觉到你的动作，脚步顿了一下。
+
+"乖。"他低声说，手掌在你背上轻轻拍了两下。
+
+某幻走在另一边，不着痕迹地把身体挡在外侧，一直走到小区门口才松开。
+
+进门之后，花少北长长地出了一口气，把你放在沙发上，蹲下来，认真地看着你："刚才做得很好。"
+
+你不太懂"很好"是什么意思。
+
+但你记住了他脸上那种松了一口气的表情。`
+    },
+    {
+      label:'问他："为什么不能看？"',
+      effects:{risk:3, presence:7, family:4},
+      result:`花少北的脚步慢了下来。
+
+"因为……"他斟酌了一下，"因为有些叔叔阿姨，拍照片的时候会很开心，但是发出去之后，会让爸爸们很麻烦。"
+
+"为什么麻烦？"
+
+"因为爸爸们的工作，是要给很多人看的。"他把你往上抱了抱，"有些东西，不能给所有人看。"
+
+某幻在旁边接了一句："等你长大就懂了。"
+
+花少北看了他一眼，没说话。
+
+那天晚上，你睡觉之前忽然想：那什么东西是可以给别人看的呢。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+
+/* ---------- 阶段总结：懵懂期 ---------- */
+{
+  type:'summary', stage:'懵懂期',
+  title:'阶段总结 · 懵懂期',
+  items:[
+    ['本阶段三件核心关键事件',
+     '幼儿园家长日上你说出的"两个爸爸"；深夜客厅里那场压低声音的争执；超市门口那两个举起手机的背影。'],
+    ['某幻 & 花少北二人感情变化',
+     '矛盾开始从"藏不藏得住"变成"扛不扛得住"。花少北越来越敢直接表达，某幻依然习惯沉默，但已经开始学着在争执里松开手。'],
+    ['女儿内心成长与心态变化',
+     '你隐约意识到，自己家好像和别人家不太一样。你开始学会看他们的脸色，也学会了在合适的时候，什么都不说。'],
+    ['当前尚未解决的危机、潜藏隐患',
+     '镜头已经开始出现在生活半径之内。孩子的社交圈正在扩大，而"两个爸爸"这件事，正在从家里走向外面。']
+  ]
+},
+
+/* ---------- 青春期 ---------- */
+{
+  type:'chapter', stage:'青春期', act:'第二幕 · 成长的重量',
+  title:'家里几口人', scene:'中学·教室 / 放学路上',
+  text:`初三那年，班主任发下来一张表，让填家庭情况。
+
+父母姓名，工作单位，联系电话。
+
+你握着笔，在"母亲"那一栏停了很久，最后划掉了整行，在"父亲"后面写了两遍名字。
+
+同桌探头看了一眼："你怎么写两个爸？"
+
+"我两个爸爸。"
+
+"……哦。"同桌愣了一下，很识趣地没再问。
+
+放学的时候，你在校门口看见花少北。他靠在车边，帽檐压得很低，手机举在面前，像是在拍什么。
+
+"录什么呢？"你走过去。
+
+"没什么。"他把手机收起来，笑了一下，"记录一下我们囡囡放学。"
+
+你忽然发现他眼睛下面有一片很淡的青色。
+
+回家路上，你坐在后座，从后视镜里看着他的脸，忽然意识到——他们也会累。
+
+那天晚上你房间的灯关了之后，客厅的灯一直亮到凌晨两点。`,
+  options:[
+    {
+      label:'第二天，你主动提出要帮忙分担一些事',
+      effects:{family:7, love:4, presence:8, career:-5},
+      result:`晚饭桌上，你说："以后家里的事，我可以分担一点。"
+
+两个人都停了筷子。
+
+"什么事？"某幻问。
+
+"比如……"你想了想，"比如你们的视频剪辑，我可以学。或者，你们忙的时候，我自己上下学，不用接。"
+
+花少北放下筷子："接送这件事没得商量。"
+
+"我又不是小孩子了。"
+
+"你才十三。"
+
+"十三也不小了。"
+
+某幻在旁边笑了一声。两个人一起看他。
+
+"我觉得，"他慢条斯理地说，"可以试试。"
+
+花少北瞪他："你站哪边的？"
+
+"我站中间。"`
+    },
+    {
+      label:'你偷偷去翻他们的直播回放和评论区',
+      effects:{fan:8, risk:5, presence:5},
+      result:`你戴着耳机，在房间里看了整整三个小时。
+
+弹幕滚得飞快，有些是玩梗，有些是起哄，有些话刻薄得让人皱眉。
+
+你在一条评论下面停了很久：「这俩人是不是有点太熟了。」
+
+底下有三百多条回复，一半在笑，一半在吵。
+
+你关掉页面，摘下耳机，听见客厅里花少北在笑，某幻在说话。
+
+你忽然明白，那些笑声和屏幕上的字，是活在同一个世界里的。
+
+从那天起，你开始学着分辨，哪些话可以让他们看见，哪些不可以。`
+    },
+    {
+      label:'你什么也没说，只是把那张表折起来收进了抽屉',
+      effects:{presence:6, family:3, risk:4},
+      result:`抽屉最深处，压着你从小到大的东西：幼儿园那张三个人手拉手的画，一张超市小票，一张江原道的地图册页。
+
+你把那张表放了进去，压在它们中间。
+
+然后你合上抽屉，站起来，去客厅倒了一杯水。
+
+花少北躺在沙发上，头枕着某幻的腿，正在打盹。某幻低头看着手机，一只手无意识地放在他头发上。
+
+你没有出声，端着水回了房间。
+
+有些事情，你想一个人先收着。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'青春期', act:'第二幕 · 成长的重量',
+  title:'关上的门', scene:'合租公寓·走廊',
+  text:`那天晚上，你从房间出来倒水，听见客厅里在吵。
+
+"这单我推了。"某幻的声音很硬。
+
+"你推了谁给你补？"花少北的声音更高，"我不需要你这样。"
+
+"我不是为你。"
+
+"那你为谁？"
+
+你端着杯子站在走廊的阴影里，没动。
+
+后来某幻说了一句什么，声音太低，听不清。花少北忽然安静了。
+
+再后来，你听见他吸鼻子的声音。
+
+"你别这样。"花少北说，"你一这样我就没办法生气了。"
+
+某幻笑了一下，很轻："那就别生气。"
+
+"……我没生气。"
+
+客厅里传来很轻的一声响，像是有人被抱住了。
+
+你退回房间，把门轻轻带上。`,
+  options:[
+    {
+      label:'第二天，你端两杯水走进客厅',
+      effects:{family:8, love:6, presence:7},
+      result:`两个人正一左一右坐在沙发两头，中间隔着半个抱枕的距离。
+
+你把水放在他们面前，然后什么也没说，转身回房间。
+
+"哎。"花少北叫住你，"过来。"
+
+你走过去。
+
+他拉你在中间坐下，某幻在旁边挪了挪，把抱枕塞到你背后。
+
+三个人就那么坐着，电视开着，谁也没在看。
+
+过了很久，某幻伸手，把花少北那杯水端起来，递到他手里。
+
+花少北接过来，喝了一口。
+
+"没放糖。"他说。
+
+"水放什么糖。"
+
+"我就说说。"
+
+你低头喝水，把笑藏在了杯子后面。`
+    },
+    {
+      label:'你给中国BOY 发了条消息："他们吵架了"',
+      effects:{family:4, presence:5, love:2, risk:2},
+      result:`半小时后，中国BOY 拎着两盒炸鸡敲开了门。
+
+"正好路过。"他笑呵呵地说，完全不像路过。
+
+某幻和花少北都愣了一下，气氛有点尴尬，但 BOY 完全不在意，自顾自地把炸鸡摊在茶几上，开始念叨最近的游戏更新。
+
+客厅里的空气慢慢松了下来。
+
+后来他要走的时候，在门口低声跟你说："以后有事就发消息，别自己憋着。"
+
+你点点头。
+
+那天晚上，客厅的灯关得很早。`
+    },
+    {
+      label:'你回到房间，在日记本上写了一行字',
+      effects:{presence:7, family:2, love:2},
+      result:`「他们吵架的时候，我什么都做不了。」
+
+写完你看了很久，然后把这一页撕下来，折成很小的一块，塞进抽屉最里面。
+
+第二天早上，你照常吃早饭，照常出门上学。
+
+花少北在门口喊："晚上想吃什么？"
+
+"都行。"
+
+"都行是什么。"
+
+"……面。"
+
+"好嘞。"
+
+门关上之后，你在楼道里站了几秒，才往下走。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'青春期', act:'第二幕 · 成长的重量',
+  title:'路透', scene:'漫展场馆外 / 微博',
+  text:`线下漫展的第三天，有人拍到某幻和花少北在后台通道的侧影。
+
+照片很模糊，两个人靠得有点近。
+
+超话里瞬间炸了。有人说是角度问题，有人说是真的，有人翻出三年前的旧图，一张一张比对。
+
+那天晚上，客厅的灯开着，两个人坐在沙发上，谁都没说话。手机在茶几上震个不停。
+
+"要不要发个声明？"花少北问。
+
+"发什么？"
+
+"说是角度问题。"
+
+某幻看了他很久："你想这么说吗？"
+
+花少北没回答。
+
+你在房间里听着，把耳机摘了下来。`,
+  options:[
+    {
+      label:'你走出去，坐到他们中间',
+      effects:{family:9, love:6, presence:9},
+      result:`两个人同时看向你。
+
+"怎么了？"花少北问，"吵到你了？"
+
+你摇头："我出来坐着。"
+
+茶几上的手机还在震。
+
+某幻伸手，把手机翻了个面，扣在桌上。
+
+"今天不看了。"他说。
+
+花少北愣了一下，然后也把自己的手机扣了下去。
+
+三个人就那么挤在沙发上，谁也没说话，电视里放着谁都没在看的节目。
+
+过了很久，花少北把头靠到了某幻肩上。
+
+你听见他很轻地说了一句："算了。"
+
+某幻"嗯"了一声，把手放在他头上。`
+    },
+    {
+      label:'你用自己的小号在超话里发了一条澄清',
+      effects:{fan:-8, risk:5, presence:4},
+      result:`你打了一段话：「只是角度问题吧，别过度解读了，人家也是普通人。」
+
+发出去之后，你把手机扔到床上，心跳得很快。
+
+十分钟后，那条帖子被顶了上去，底下有人说"理智粉说得对"，也有人骂"洗地狗"。
+
+你盯着屏幕看了很久，然后把它删了。
+
+第二天超话的热度降下去了。
+
+花少北在早饭桌上说："好像没什么事了。"
+
+某幻"嗯"了一声。
+
+你低头喝粥，没有说任何话。`
+    },
+    {
+      label:'你把门关上，戴上耳机',
+      effects:{presence:-5, family:-3, risk:4},
+      result:`耳机里放着很吵的歌，你还是能听见外面的动静。
+
+后来歌放完了，安静下来，你听见客厅里某幻在说话，声音很低，听不清内容。
+
+再后来，客厅的灯灭了。
+
+第二天早上，两个人像往常一样坐在餐桌边，只是谁都没有提昨晚的事。
+
+你也没有提。
+
+有些门一旦关上，就有点难再打开了。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'青春期', act:'第二幕 · 成长的重量',
+  title:'江原道的雪', scene:'韩国·江原道',
+  cond: s => s.attrs.love >= 65 && s.attrs.family >= 60 && s.attrs.career < 50,
+  text:`某天晚饭，花少北刷着机票页面随口出声："我订了去韩国的机票。"
+
+某幻擦着碗从厨房探出头："去哪一片？"
+
+"江原道，五天。"
+
+厨房安静了一瞬，短到只有你能捕捉到某幻顿住的动作。他低头继续烧水，淡淡应了一句："我们几号走？"
+
+花少北指尖划着屏幕，嘴角悄悄扬起一点，自己都没察觉。
+
+出发前一晚，你整理行李箱时翻出一张压在相册底层的旧照片——早年去哔哩哔哩美丽小学时拍的，云南，两个人，都还很年轻。
+
+你拿着照片去找花少北。他指尖摩挲照片边缘，慢慢开口："诶，云南那次还没有你呢。时间过好快啊。"
+
+后来你拿照片去问某幻，某幻说："这真是很久之前的照片了。当时跟小学里的小孩玩，花少北就说他喜欢小孩。"
+
+十二月的江原道飘着细雪。
+
+走出车站，寒风卷着雪落在肩头。花少北压着针织帽抬头望向远处覆雪的牧场，站在原地静静看了很久，像是终于抵达了搁置多年的心愿。
+
+某幻走到他身侧并肩而立，没有多说话，只是轻轻拢了拢他的围巾："站久了冻得慌，往前走吧。"
+
+花少北应声，自然往他身侧靠了半步。
+
+你走在两人身后，踩雪发出咯吱轻响。`,
+  options:[
+    {
+      label:'你刻意走远几步，去看街边的鱼饼汤摊子',
+      effects:{family:8, love:10, presence:6},
+      result:`暖黄的灯光混着落雪。
+
+花少北先给你买了一杯热柚子茶，转身把另一杯塞到某幻手里："别嘴硬说不冷。"
+
+某幻接过抿了一口，皱眉："太甜。"
+
+"你本来就爱吃甜。"
+
+"我不爱。"
+
+"你爱。"花少北笑着怼回去，"上次那杯三分糖你都说甜，结果喝完了。"
+
+某幻没再接话，只是把杯子握得更稳了一点。
+
+你站在几步之外，背过身去挑街边的小饰品，悄悄弯起了嘴角。
+
+那天在巨大的雪景钟雕塑前，三个人站了很久。花少北的肩膀无意识地贴紧了某幻。
+
+没有人说话。
+
+雪一直在下。`
+    },
+    {
+      label:'你招手叫他们过来，让路人帮忙拍一张三人合照',
+      effects:{family:9, love:8, presence:8, risk:1},
+      result:`花少北把手机递给一位路过的韩国大叔，比划了半天。
+
+照片拍出来了：白雪、枯树、并肩站着的他们，还有站在中间的你。
+
+你反复翻看。
+
+花少北凑过来："我看看。"
+
+"你闭眼了。"
+
+"哪儿闭眼了？"
+
+"这里。"
+
+"没有！"
+
+某幻在旁边看了一眼，说："确实闭了。"
+
+"……你们两个一伙的。"
+
+回民宿的路上，花少北一直在翻手机，最后把那张照片设成了锁屏。
+
+某幻看见了，什么也没说，只是把手插在口袋里，走得慢了一点，等他和自己并肩。`
+    },
+    {
+      label:'晚上你说累了，先回房间休息',
+      effects:{family:6, love:12, presence:5},
+      result:`你回到房间，没有睡，坐在窗边看楼下街道的落雪。
+
+四十多分钟后，房门轻开，两个人压低声音进门，换鞋，低声交谈，话语模糊听不真切。
+
+后来客厅安静下来。
+
+你听见很轻的一声，像是有人的额头靠上了另一个人的额头。
+
+"你还记得吗。"是花少北的声音，很轻，"我说过想一起来韩国。"
+
+"记得。"
+
+"我以为你忘了。"
+
+"没忘。"
+
+窗外的雪飘在路灯光晕里。
+
+隔着一道门，你听不太清后面的话，只听到一些很低的、带着笑意的声音。
+
+你把脸贴在冰凉的玻璃上，闭上了眼睛。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+
+/* ---------- 阶段总结：青春期 ---------- */
+{
+  type:'summary', stage:'青春期',
+  title:'阶段总结 · 青春期',
+  items:[
+    ['本阶段三件核心关键事件',
+     '那张填了两遍名字的家庭情况表；走廊里你听见的那场争吵；超话里那张模糊的侧影照片。江原道的雪，如果你们走到了，也会被记很久。'],
+    ['某幻 & 花少北二人感情变化',
+     '争执变多了，但和解也变快了。他们不再只是背靠背坐着，开始学着转过身来，面对面地把话说清楚。'],
+    ['女儿内心成长与心态变化',
+     '你终于完全看懂了。你知道这个家是怎么运转的，知道哪一句话会让他们沉默，也知道自己手里握着什么。'],
+    ['当前尚未解决的危机、潜藏隐患',
+     '你已经成年在望。一旦你离开这间出租屋，这个家最后一道"未成年"的保护壳，也就没有了。']
+  ]
+},
+
+/* ---------- 成年初期 ---------- */
+{
+  type:'chapter', stage:'成年初期', act:'第三幕 · 你站在哪里',
+  title:'临界点', scene:'上海·合租公寓客厅',
+  text:`你十八岁那年秋天，事情终于走到了这一步。
+
+一篇长文在凌晨发出，标题叫《关于某幻和花少北》。附件里有三年前的照片、小区门口的监控截图，还有一张很模糊的、你被抱在怀里的背影。
+
+天亮之前，转发破万。
+
+客厅里，某幻坐在沙发最左边，花少北坐在最右边，中间隔着一个抱枕的距离。
+
+"我先说。"花少北开口，"不管你怎么决定，我认。"
+
+某幻没看他："你认什么？"
+
+"认我们这些年。"
+
+窗外天在亮，光一点一点爬过地板。
+
+两个人谁也没有先动。
+
+你站在自己房间门口，握着门把手。`,
+  options:[
+    {
+      label:'你走过去，坐到他们中间，握住两个人的手',
+      effects:{family:14, love:10, presence:12},
+      result:`两个人都僵住了。
+
+你先握住花少北的手，再握住某幻的。
+
+"我在。"你说。
+
+花少北先崩的。他低下头，肩膀抖了一下，很快又抬起来，笑得有点难看："你哭什么。"
+
+"我没哭。"你说。
+
+"我说你爸。"他指了指某幻。
+
+某幻把头转开了，抬手抹了一下脸，动作很快，像是不想被看见。
+
+后来三个人就那样坐着，谁也没松手。
+
+天亮透了的时候，某幻说："发声明吧。"
+
+花少北说："嗯。"
+
+"一起。"
+
+"嗯。"`
+    },
+    {
+      label:'你退回房间，把门带上，给他们留一点空间',
+      effects:{presence:-6, family:-4, love:4},
+      result:`门关上的瞬间，你听见客厅里花少北长长地呼出一口气。
+
+你靠在门后，听着外面的动静。
+
+过了很久，很轻的一声响，像是有人被抱住了。
+
+"对不起。"某幻的声音闷闷的。
+
+"你别跟我说这个。"
+
+"……"
+
+"你跟我说这个，我就撑不住了。"
+
+你把额头抵在门板上，闭上了眼睛。
+
+那天他们没有叫你吃早饭。你也没有出去。
+
+中午的时候，花少北敲了敲门，声音尽量轻松："出来吃点东西吧。"
+
+你说好。
+
+推开门的时候，客厅已经被收拾得很干净了，什么痕迹都没有。`
+    },
+    {
+      label:'你拿起手机，打开了自己的账号',
+      effects:{presence:10, risk:10, fan:6, family:5},
+      result:`你注册了一个新账号，头像用的是一张空白的雪景。
+
+第一条帖子，你打了很久的字。
+
+「我知道你们在等一个说法。
+我不知道该怎么说。
+我只想说，我从小到大，过得很好。
+就是这样。」
+
+发出去之后，你把手机放进口袋，走到客厅。
+
+两个人都看着你。
+
+"我发了。"你说。
+
+某幻愣了一下，随即站起来，走过来，把手放在你的肩上，很用力地按了一下。
+
+花少北坐在沙发上没动，只是看着你，很久很久，然后忽然笑了，笑得眼泪都出来了："我们家小孩，长大了。"`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+},
+{
+  type:'chapter', stage:'成年初期', act:'第三幕 · 你站在哪里',
+  title:'你站在哪里', scene:'上海·外滩',
+  text:`风波过去了一个月。
+
+没有人真的站出来说清楚什么，但也没有人再追着问。热度慢慢降下去，像所有热搜一样。
+
+某幻和花少北暂停了所有更新。
+
+一个傍晚，三个人去了外滩。江风很凉，花少北把外套的拉链拉到最上面，某幻站在他旁边，两个人靠得比平时近一些——因为这里没有人认识他们。
+
+"接下来怎么办？"花少北问。
+
+某幻看着江面："你想怎么办？"
+
+"我问你。"
+
+"我在问你。"
+
+花少北笑了一下："这么多年了，还是这样。"
+
+你站在他们身后一点的地方，看着这两个人的背影。
+
+你知道，接下来的那句话，要从你嘴里说出来。
+
+你只有一次机会。`,
+  options:[
+    {
+      label:'"我想做自媒体。和你们一样。"',
+      flag:'media',
+      effects:{presence:12, family:6, love:5, career:-10},
+      result:`两个人都转过身来。
+
+某幻看了你很久，没有劝阻，也没有鼓励，只是很平静地讲了一遍这个行业所有可能砸到人身上的东西——流量、舆论、合约、失眠、被误解、被消耗。
+
+花少北在旁边听着，最后说了一句："但是不管你选什么，家永远是退路。"
+
+"我知道。"你说。
+
+某幻沉默了一会儿，忽然笑了一下："那以后可能要反过来，让你罩着我们了。"
+
+"好啊。"你说。
+
+江风把三个人的影子吹得很长。`
+    },
+    {
+      label:'"我想过普通人的生活。"',
+      flag:'ordinary',
+      effects:{presence:8, family:6, love:4, career:-15, risk:-6},
+      result:`花少北愣了一下，然后笑起来，笑得特别轻松："好啊。"
+
+某幻也笑了："那我是不是可以退休了。"
+
+"想得美。"花少北怼他，"你还有房贷。"
+
+"……"
+
+"我可以去你大学那边租个房子。"花少北忽然说，"偶尔去看你。"
+
+"别。"你说，"我自己可以。"
+
+"我知道你可以。"他顿了顿，"但我想去。"
+
+某幻在旁边说："那就一起去。"
+
+三个人站在江边，谁都没有再说话。`
+    },
+    {
+      label:'"我想离开上海一段时间。"',
+      flag:'leave',
+      effects:{presence:4, family:-8, love:-3},
+      result:`花少北的笑容僵了一下。
+
+"……多久？"
+
+"不知道。"你说，"我想自己待一阵子。"
+
+他张了张嘴，最后什么都没说，只是点了点头。
+
+某幻把手放在他肩膀上，看着你，很平静地说："去吧。有事就打电话。"
+
+"嗯。"
+
+那天回去的路上，花少北走在最前面，一直没有回头。
+
+你知道他在忍。
+
+你也知道，有些话现在说不出口，可能就再也说不出口了。`
+    },
+    {
+      label:'自由输入',
+      free:true
+    }
+  ]
+}
+
+];
+
+/* ============================================================
+   章节渲染
+   ============================================================ */
+function renderChapter(){
+  // 查找下一章有效章节
+  while(S.idx < CHAPTERS.length){
+    const ch = CHAPTERS[S.idx];
+    if(ch.cond && !ch.cond(S)) { S.idx++; continue; }
+    break;
+  }
+  if(S.idx >= CHAPTERS.length){ resolveEnding(); return; }
+
+  const ch = CHAPTERS[S.idx];
+  const st = stageEl();
+
+  if(ch.type === 'summary'){
+    st.innerHTML = `<div class="chapter">
+      <div class="ch-meta">${ch.stage} · 阶段总结</div>
+      <div class="ch-title">${ch.title}</div>
+      <div class="ch-scene">记忆归档</div>
+      <div class="summary-box">
+        ${ch.items.map(([h,p])=>`<div class="summary-item"><h4>${h}</h4><p>${fmt(p)}</p></div>`).join('')}
+      </div>
+      <button class="btn primary" id="contBtn">继续 →</button>
+    </div>`;
+    document.getElementById('contBtn').onclick = ()=>{ S.idx++; renderChapter(); };
+    scrollTop();
+    return;
+  }
+
+  st.innerHTML = `<div class="chapter">
+    <div class="ch-meta">${ch.act} · ${ch.stage}</div>
+    <div class="ch-title">${ch.title}</div>
+    <div class="ch-scene">当前场景：${ch.scene}</div>
+    <div class="prose">${fmt(ch.text)}</div>
+    <div class="choices">
+      <div class="choices-title">【请选择】</div>
+      <div id="choiceList"></div>
+    </div>
+  </div>`;
+
+  const list = document.getElementById('choiceList');
+  ch.options.forEach((o, i)=>{
+    const label = o.free ? '自由输入' : o.label;
+    const prefix = o.free ? 'D' : String.fromCharCode(65+i);
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.innerHTML = `<b>${prefix}.</b> ${label}`;
+    b.onclick = ()=> o.free ? renderFreeInput(ch) : pickOption(o);
+    list.appendChild(b);
+  });
+
+  scrollTop();
+  renderStats();
+}
+
+/* ============================================================
+   选择处理
+   ============================================================ */
+function pickOption(opt){
+  const deltas = [];
+  if(opt.effects){
+    for(const k in opt.effects){
+      const before = S.attrs[k];
+      S.attrs[k] = clamp(before + opt.effects[k]);
+      const d = S.attrs[k] - before;
+      if(d !== 0) deltas.push({k, d});
+    }
+  }
+  if(opt.flag) S.flags[opt.flag] = true;
+
+  renderStats();
+
+  const wrap = document.querySelector('.choices');
+  wrap.innerHTML = `<div class="result">
+    <div class="result-prose">${fmt(opt.result)}</div>
+    ${deltas.length ? `<div class="deltas">${deltas.map(d=>
+      `<span class="${d.d>0?'up':'down'}">${nameOf(d.k)} ${d.d>0?'↑':'↓'}${Math.abs(d.d)}</span>`
+    ).join('')}</div>` : ''}
+    <button class="btn primary" id="contBtn">继续 →</button>
+  </div>`;
+
+  document.getElementById('contBtn').onclick = ()=>{ S.idx++; renderChapter(); };
+  document.getElementById('contBtn').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ============================================================
+   自由输入
+   ============================================================ */
+function renderFreeInput(ch){
+  const wrap = document.querySelector('.choices');
+  wrap.innerHTML = `<div class="free-wrap fade">
+    <input class="text-input" id="freeInput" placeholder="写下你此刻想做的事、想说的话……" autocomplete="off">
+    <button class="btn primary" id="freeBtn">确认 →</button>
+  </div>`;
+  const input = document.getElementById('freeInput');
+  input.focus();
+  document.getElementById('freeBtn').onclick = ()=> doFree(input.value, ch);
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter') doFree(input.value, ch); });
+  input.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function doFree(raw, ch){
+  const v = (raw||'').trim();
+  if(!v){ document.getElementById('freeInput').focus(); return; }
+
+  // 关键词推演
+  let reply, effects;
+  if(/抱|搂|依偎|靠|牵|握/.test(v)){
+    reply = `你走过去，做了那个动作。
+
+空气安静了一瞬，然后是衣料摩擦的声音，是很轻的呼吸声。
+
+没有人问为什么。有些时候，语言是多余的。`;
+    effects = {family:6, love:5, presence:5};
+  }else if(/说|问|告诉|喊|叫/.test(v)){
+    reply = `你把那句话说了出来。
+
+声音不大，但在安静的房间里，每个字都听得很清楚。
+
+花少北先看着你，眼神里有点意外，又有点别的什么。某幻没有说话，只是把手放在了你肩上，很轻地按了一下。
+
+后来谁也没有再提这件事。但你知道，他们都记住了。`;
+    effects = {family:4, love:3, presence:5};
+  }else if(/哭|眼泪|难过|心疼/.test(v)){
+    reply = `眼泪比想象中来得快。
+
+花少北一下子慌了，手忙脚乱地去找纸巾，某幻已经先一步蹲下来，把你抱住。
+
+"没事。"他说，"没事的。"
+
+花少北也蹲了下来，两个人一左一右，把你围在中间。
+
+那天之后，家里的灯关得晚了一点。`;
+    effects = {family:5, love:4, presence:6};
+  }else if(/跑|走|离开|出去|一个人/.test(v)){
+    reply = `你转身走了出去。
+
+身后有人叫了你的名字，你没有回头。
+
+楼道里的声控灯一盏一盏地亮起来，又一盏一盏地灭下去。
+
+你在楼下站了很久，直到风把脸吹得有点凉。
+
+后来，你听见脚步声从楼道里传出来。`;
+    effects = {presence:3, family:-3, love:-1};
+  }else if(/沉默|不说|安静|看/.test(v)){
+    reply = `你什么也没做，只是安静地待在那里。
+
+有时候，这已经是一种回应。
+
+房间里的空气慢慢松下来，像绷紧的弦被轻轻放开了。
+
+某幻看了你一眼，花少北也看了你一眼，都没有说话。`;
+    effects = {presence:4, family:3, love:2};
+  }else{
+    reply = `你那么做了。
+
+房间里安静了几秒。
+
+某幻和花少北对视了一眼，谁都没有立刻说话。后来花少北轻轻笑了一下，某幻低下头，继续做手里的事，只是动作慢了一点。
+
+这一天就这么过去了，和往常没有太大分别。`;
+    effects = {presence:3, family:2};
+  }
+
+  const deltas = [];
+  for(const k in effects){
+    const before = S.attrs[k];
+    S.attrs[k] = clamp(before + effects[k]);
+    const d = S.attrs[k] - before;
+    if(d) deltas.push({k, d});
+  }
+  renderStats();
+
+  const wrap = document.querySelector('.choices');
+  wrap.innerHTML = `<div class="result">
+    <div class="result-prose" style="color:var(--dim);font-style:italic;font-size:14px;margin-bottom:18px;">「${v}」</div>
+    <div class="result-prose">${fmt(reply)}</div>
+    ${deltas.length ? `<div class="deltas">${deltas.map(d=>
+      `<span class="${d.d>0?'up':'down'}">${nameOf(d.k)} ${d.d>0?'↑':'↓'}${Math.abs(d.d)}</span>`
+    ).join('')}</div>` : ''}
+    <button class="btn primary" id="contBtn">继续 →</button>
+  </div>`;
+
+  document.getElementById('contBtn').onclick = ()=>{ S.idx++; renderChapter(); };
+  document.getElementById('contBtn').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+/* ============================================================
+   结局
+   ============================================================ */
+const ENDINGS = {
+  BE:{
+    tag:'BAD ENDING',
+    title:'仅为挚友',
+    text:`声明发出去了。两个人各自转发，措辞严谨，像一份工作通告。
+
+某幻搬去了城东。你们留在了原来的出租屋。
+
+他还是会来，只是时间不定，进门先看楼下有没有人。
+
+有一次他在厨房做饭，花少北站在门口看他，两个人谁也没说话，就那么站了很久。
+
+后来某幻说："锅要糊了。"
+
+花少北说："嗯。"
+
+你坐在客厅，把电视声音调大了一点。
+
+你们还是三个人，只是这个家，从此少了一半的光。`
+  },
+  OE:{
+    tag:'OPEN ENDING',
+    title:'遥遥相望',
+    text:`你在另一个城市安顿下来。
+
+房子不大，朝南，阳台上能看见很远的天。
+
+每周六晚上八点，你们视频。花少北总是先说，某幻总是出现在画面边缘，端着一杯水经过，装作不经意地看一眼。
+
+"最近还好吧？"他问。
+
+"挺好的。"你说。
+
+"那就好。"
+
+然后就是一阵沉默，谁都不先挂。
+
+你能听见他们那边直播的回声，听见两个人为了一个游戏操作拌嘴，听见花生米跳上桌的声音。
+
+那些声音很像从前，又不太一样。
+
+你有时候会想，如果那天你做了另一个选择，现在会是什么样。
+
+但这个问题没有答案，也没有人能替你回答。`
+  },
+  TE:{
+    tag:'TRUE ENDING',
+    title:'隐秘安稳的小家',
+    text:`很多年以后，直播间早就关了。
+
+最后一场直播结束的那天晚上，两个人把设备装箱。某幻抱着主机下楼，花少北在门口等，手里拎着猫笼，花生米在里面叫了两声。
+
+后来他们搬去了河北。一座不大的城，冬天很冷，楼下有家面馆，老板认得他们，从来不问。
+
+你考上了外地的大学，学的是很普通的专业。毕业后留在那座城市工作，租了间一居室，周末坐高铁回家。
+
+回家的时候，玄关的灯总是亮着，桌上摆着一碗没放香菜的面。
+
+没有人知道你从哪来，也没有人需要知道。
+
+你们只是三个人，和一只猫，把很多年前那个傍晚的橘色窗光，过成了日常。`
+  },
+  HE:{
+    tag:'HAPPY ENDING',
+    title:'再度同行',
+    text:`你的账号在第三年破了百万粉。
+
+吃播、游戏、科技、美妆，你什么都做，粉丝说你风格跳脱，猜不透下一条会发什么。
+
+某幻和花少北渐渐淡出了镜头。他们不再固定开播，偶尔出现在你视频的边角——一个递水的声音，一句画外的"确实"，一只入镜的手。
+
+有人在评论区问，这两位是谁。
+
+你回：家里人。
+
+那天晚上，花少北在你房间门口站了很久，最后什么也没说，只是把你小时候那张画着三个人的全家福，从抽屉里拿出来，擦干净，挂到了客厅墙上。
+
+某幻在厨房喊吃饭。
+
+窗外上海的夜很亮，客厅的灯也很亮。`
+  },
+  HIDDEN:{
+    tag:'HIDDEN ENDING',
+    title:'在路上',
+    text:`没有人能说清那天之后事情是怎么过去的。
+
+它既没有彻底崩塌，也没有真正安稳下来。
+
+某幻和花少北还在一起，还在做内容，还在镜头前保持那点恰到好处的距离。你长大了，离开了上海，偶尔回来。
+
+有一次你在机场候机，翻出手机里那张江原道的雪景照。照片上三个人站在一起，身后是落满雪的枯树。
+
+你看了很久，然后关掉屏幕，听见广播里叫你的航班。
+
+路还长。
+
+故事没有结束，只是还没走到该停下的地方。`
+  }
+};
+
+function resolveEnding(){
+  const a = S.attrs;
+  const f = S.flags;
+  let key = 'HIDDEN';
+
+  // BE：秘密危险度与平台警觉度双高，且感情尚存
+  if(a.risk >= 90 && a.alert >= 90 && a.love > 50){
+    key = 'BE';
+  }
+  // HE：自媒体道路 + 高存在感
+  else if(f.media && a.presence >= 90 && a.love >= 70 && a.family >= 80){
+    key = 'HE';
+  }
+  // TE：普通道路 + 各项均衡良好
+  else if(!f.media && a.family >= 80 && a.love >= 70 && a.risk < 50 && a.presence >= 70){
+    key = 'TE';
+  }
+  // OE：离开 + 家庭凝聚力低
+  else if(f.leave && a.family < 50 && a.love >= 40 && a.risk >= 30){
+    key = 'OE';
+  }
+  // 保底推演
+  else if(a.family < 20){
+    key = 'BE';
+  }
+  else if(f.leave && a.family < 55){
+    key = 'OE';
+  }
+
+  const e = ENDINGS[key];
+  const st = stageEl();
+  document.getElementById('stats').classList.add('hidden');
+
+  st.innerHTML = `<div class="ending">
+    <div class="ending-tag">${e.tag}</div>
+    <h1 class="ending-title">${e.title}</h1>
+    <div class="ending-prose">${fmt(e.text)}</div>
+    <div class="center">
+      <button class="btn primary" id="restartBtn">重新开始</button>
+    </div>
+  </div>`;
+
+  document.getElementById('restartBtn').onclick = ()=> location.reload();
+  scrollTop();
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+boot();
+</script>
+</body>
+</html>
